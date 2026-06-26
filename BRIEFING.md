@@ -326,13 +326,24 @@ Monitoring:
 
 ### Fase 2B — Uitbreiding naar andere fenomenen
 
-De voorspellingsinfrastructuur is herbruikbaar voor andere kust- en weerverschijnselen:
+De voorspellingsinfrastructuur is herbruikbaar voor andere kust- en weerverschijnselen. Elk fenomeen krijgt een eigen kaartlaag met bijpassende animatie en kleurpalet.
 
+**Kustnatuur:**
 - **Kwallenstrand** — kans op kwallen per locatie op basis van stroming en temperatuur
 - **Algenbloeien** — cyanobacteriën of andere bloeien op basis van nutriënten en temperatuur
 - **Groene zee** — chlorofyl-bloei die het water groen kleurt
-- **Zeespiegeldata** — stormvloed- of hoogwaterwaarschuwingen per locatie
-- **Nachtlicht / Melkweg** — luchtkwaliteitsvoorspelling voor sterrenkijken aan de kust
+
+**Bijzondere wolkenformaties:**
+- **Shelf cloud (boogwolk)** — voorspelling van arcus-wolken bij naderende buienlijn, op basis van CAPE, windshear en frontale activiteit
+- **Supercell** — kans op rotaterende onweersbuien, gebaseerd op atmosferische instabiliteit (CAPE > 1500 J/kg), windshear en vochtigheid
+- **Mammatus** — zakwolken onder aambeeldwolken, indicator van sterke convectie
+- **Lenticularis** — linsvormige wolken boven reliëf, op basis van windprofiel en stabiliteitsgradient
+- **Noctiluca-wolken (NLC)** — ijswolken op 80 km hoogte, zichtbaar in de schemering in zomer; op basis van seizoen, breedtegraad en atmosferische condities
+
+**Licht en lucht:**
+- **Nachtlicht / Melkweg** — luchtkwaliteitsvoorspelling voor sterrenkijken aan de kust (Bortle-schaal, luchtvochtigheid, bewolking)
+- **Groene flits** — zeldzaam optisch verschijnsel bij zonsondergang boven zee
+- **Stormvloed / hoogwater** — waarschuwingen per locatie op basis van RWS-getijdendata
 
 ### Fase 3 — Platform
 
