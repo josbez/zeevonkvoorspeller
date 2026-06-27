@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { LOCATIES } from '@/lib/locaties'
 
+
 export const runtime = 'edge'
 
 export async function GET() {
