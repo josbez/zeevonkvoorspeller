@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #050d1a;
+  --color-surface: #0d1f35;
+  --color-surface-elevated: #162b47;
+  --color-zeevonk: #00e5ff;
+  --color-zeevonk-glow: #7efff5;
+  --color-zeevonk-deep: #0052cc;
+  --color-success: #39ff14;
+  --color-warning: #ffb703;
+  --color-text: #e8f4f8;
+  --color-text-muted: #8bb8cc;
+  --color-border: #1e3a52;
+  --background: #050d1a;
+  --foreground: #e8f4f8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+/* ─── Zeevonk marker animaties ─────────────────────────────────── */
+.zeevonk-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.zeevonk-core {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.zeevonk-marker:hover .zeevonk-core { transform: scale(1.5); }
+.zeevonk-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid;
+  animation: zeevonk-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+.zeevonk-ring.ring-2 { animation-delay: 0.8s; }
+.zeevonk-ring.ring-3 { animation-delay: 1.6s; }
+
+@keyframes zeevonk-pulse {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+.zeevonk-marker[data-kans^="7"] .zeevonk-ring,
+.zeevonk-marker[data-kans^="8"] .zeevonk-ring,
+.zeevonk-marker[data-kans^="9"] .zeevonk-ring { animation-duration: 1.6s; }
+.zeevonk-marker[data-kans^="1"] .zeevonk-ring,
+.zeevonk-marker[data-kans^="0"] .zeevonk-ring { animation-duration: 4s; }
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.animate-slide-up { animation: slide-up 0.28s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* ─── Mapbox overrides ──────────────────────────────────────────── */
+.mapboxgl-ctrl-group {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+}
+.mapboxgl-ctrl-group button { background: transparent !important; }
+.mapboxgl-ctrl-attrib {
+  background: rgba(5,13,26,0.8) !important;
+  color: var(--color-text-muted) !important;
+  font-size: 10px !important;
+}
+.mapboxgl-ctrl-attrib a { color: var(--color-text-muted) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .zeevonk-ring { animation: none; opacity: 0.3; }
+  .animate-slide-up { animation: none; }
+}
