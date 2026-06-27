@@ -38,63 +38,70 @@ html, body {
 /* ─── Zeevonk marker animaties ─────────────────────────────────── */
 .zeevonk-marker {
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 80px;
+  height: 80px;
   cursor: pointer;
 }
+
+/* Centrale dot */
 .zeevonk-core {
   position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.zeevonk-marker:hover .zeevonk-core { transform: scale(1.5); }
-.zeevonk-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid;
-  animation: zeevonk-pulse 2.4s ease-out infinite;
-  pointer-events: none;
-}
-.zeevonk-ring.ring-2 { animation-delay: 0.8s; }
-.zeevonk-ring.ring-3 { animation-delay: 1.6s; }
-
-@keyframes zeevonk-pulse {
-  0%   { transform: scale(0.6); opacity: 0.9; }
-  100% { transform: scale(3.2); opacity: 0; }
-}
-
-.zeevonk-marker[data-kans^="7"] .zeevonk-ring,
-.zeevonk-marker[data-kans^="8"] .zeevonk-ring,
-.zeevonk-marker[data-kans^="9"] .zeevonk-ring { animation-duration: 1.6s; }
-.zeevonk-marker[data-kans^="1"] .zeevonk-ring,
-.zeevonk-marker[data-kans^="0"] .zeevonk-ring { animation-duration: 4s; }
-
-/* ─── Drijvende vonkjes (schalen met kans > 80%) ───────────────── */
-.zeevonk-vonkje {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
   top: 50%;
   left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  animation: core-breathe 2.8s ease-in-out infinite;
+  transition: width 0.2s, height 0.2s;
+}
+.zeevonk-marker:hover .zeevonk-core {
+  width: 12px;
+  height: 12px;
+}
+
+@keyframes core-breathe {
+  0%, 100% { filter: brightness(1);   transform: translate(-50%, -50%) scale(1);    }
+  50%       { filter: brightness(1.6); transform: translate(-50%, -50%) scale(1.25); }
+}
+
+/* Subtiele locatierand — één rustige ring */
+.zeevonk-ring {
+  position: absolute;
+  inset: 28px;
+  border-radius: 50%;
+  border: 1px solid;
+  animation: ring-expand 3.5s ease-out infinite;
   pointer-events: none;
-  animation: vonkje-drift var(--drift-duration, 3s) ease-in-out infinite;
-  animation-delay: var(--drift-delay, 0s);
   opacity: 0;
 }
 
-@keyframes vonkje-drift {
-  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
-  20%  { opacity: 0.9; }
-  80%  { opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) translate(var(--drift-x), var(--drift-y)) scale(1); opacity: 0; }
+@keyframes ring-expand {
+  0%   { transform: scale(0.4); opacity: 0.6; }
+  100% { transform: scale(2.8); opacity: 0;   }
 }
 
-@keyframes vonkje-twinkle {
-  0%, 100% { opacity: 0.9; }
-  50%       { opacity: 0.2; }
+/* ─── Vonkjes — oplichtende deeltjes rondom de marker ──────────── */
+.zeevonk-vonkje {
+  position: absolute;
+  border-radius: 50%;
+  width: var(--vsize, 3px);
+  height: var(--vsize, 3px);
+  top: calc(50% + var(--pos-y, 0px));
+  left: calc(50% + var(--pos-x, 0px));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: vonkje-spark var(--dur, 2.4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  opacity: 0;
+}
+
+@keyframes vonkje-spark {
+  0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.2); }
+  25%  { opacity: 0.95; transform: translate(-50%, -50%) scale(1.3); }
+  55%  { opacity: 0.7;  transform: translate(-50%, -50%) scale(1.0); }
+  85%  { opacity: 0.2;  transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(0.2); }
 }
 
 @keyframes slide-up {

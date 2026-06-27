@@ -9,6 +9,7 @@ import { LocatieMetKans, DagVoorspelling } from '@/lib/types'
 import TimeSlider from '@/components/UI/TimeSlider'
 import LocationPanel from '@/components/UI/LocationPanel'
 import MoonPhase from '@/components/UI/MoonPhase'
+import TopLocaties from '@/components/UI/TopLocaties'
 
 // Mapbox is client-only (no SSR)
 const MapContainer = dynamic(() => import('@/components/Map/MapContainer'), {
@@ -159,11 +160,22 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Top locaties (desktop links) ── */}
+      {locaties.length > 0 && (
+        <aside className="hidden md:block absolute left-4 top-16 z-10 w-64 bg-[#0d1f35dd] backdrop-blur-md rounded-2xl border border-[#1e3a52] p-3">
+          <TopLocaties
+            locaties={locaties}
+            geselecteerdeLocatie={geselecteerdeLocatie}
+            onLocatieKlik={setGeselecteerdeLocatie}
+          />
+        </aside>
+      )}
+
       {/* ── Locatiepaneel (desktop: rechts / mobiel: bottom sheet) ── */}
       {geselecteerdeLocatie && (
         <>
           {/* Desktop sidebar */}
-          <aside className="hidden md:flex absolute right-4 top-4 bottom-4 w-72 z-20 flex-col bg-[#0d1f35ee] backdrop-blur-md rounded-2xl border border-[#1e3a52] p-4 animate-slide-up overflow-y-auto">
+          <aside className="hidden md:flex absolute right-4 top-4 bottom-20 w-72 z-20 flex-col bg-[#0d1f35ee] backdrop-blur-md rounded-2xl border border-[#1e3a52] p-4 animate-slide-up overflow-y-auto">
             <LocationPanel
               locatie={geselecteerdeLocatie}
               dagVoorspelling={voorspelling[geselecteerdeDag]}
@@ -199,21 +211,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── Legenda ── */}
-      <div className="absolute bottom-24 left-4 z-10 hidden md:flex flex-col gap-1 bg-[#0d1f35cc] backdrop-blur-sm rounded-xl p-3 border border-[#1e3a52]">
-        <p className="text-[9px] uppercase tracking-widest text-[#8bb8cc] mb-1">Kans op zeevonk</p>
-        {[
-          { kleur: '#39ff14', label: 'Hoog (≥70%)' },
-          { kleur: '#00e5ff', label: 'Matig (45–70%)' },
-          { kleur: '#0052cc', label: 'Laag (20–45%)' },
-          { kleur: '#1e3a52', label: 'Zeer laag (<20%)' },
-        ].map(({ kleur, label }) => (
-          <div key={label} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ background: kleur }} />
-            <span className="text-[10px] text-[#8bb8cc]">{label}</span>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
