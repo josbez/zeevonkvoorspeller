@@ -113,11 +113,25 @@ export default function MapContainer({ locaties, geselecteerdeLocatie, onLocatie
       el.className = 'zeevonk-marker'
       el.setAttribute('data-kans', String(loc.kans))
       el.style.setProperty('--glow-color', kleur)
+
+      // Vonkjes: 0 onder 80%, daarna elke 3% één extra (max 7)
+      const aantalVonkjes = Math.min(7, Math.floor(Math.max(0, loc.kans - 80) / 3))
+      const vonkjesHtml = Array.from({ length: aantalVonkjes }, (_, vi) => {
+        const hoek = (vi / aantalVonkjes) * 2 * Math.PI + Math.random() * 0.8
+        const afstand = 18 + Math.random() * 16
+        const dx = Math.round(Math.cos(hoek) * afstand)
+        const dy = Math.round(Math.sin(hoek) * afstand)
+        const duur = (2.2 + Math.random() * 1.6).toFixed(1)
+        const vertraging = (Math.random() * 2).toFixed(1)
+        return `<div class="zeevonk-vonkje" style="background:${kleur};box-shadow:0 0 4px 2px ${kleur}99;--drift-x:${dx}px;--drift-y:${dy}px;--drift-duration:${duur}s;--drift-delay:-${vertraging}s"></div>`
+      }).join('')
+
       el.innerHTML = `
         <div class="zeevonk-core" style="background:${kleur};box-shadow:0 0 8px 4px ${kleur}66"></div>
         <div class="zeevonk-ring ring-1" style="border-color:${kleur}55"></div>
         <div class="zeevonk-ring ring-2" style="border-color:${kleur}44"></div>
         <div class="zeevonk-ring ring-3" style="border-color:${kleur}33"></div>
+        ${vonkjesHtml}
       `
       el.addEventListener('click', () => onClick(loc))
 
