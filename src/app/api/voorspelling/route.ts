@@ -13,12 +13,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=windspeed_10m,cloudcover,wave_height&daily=windspeed_10m_max,cloudcover_mean&forecast_days=5&timezone=Europe%2FAmsterdam&wind_speed_unit=ms`
-    const res = await fetch(url, { next: { revalidate: 3600 } })
+    const [weerRes, marineRes] = await Promise.all([
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=windspeed_10m,cloudcover,wave_height&daily=windspeed_10m_max,cloudcover_mean&forecast_days=5&timezone=Europe%2FAmsterdam&wind_speed_unit=ms`,
+        { next: { revalidate: 3600 } }
+      ),
+      fetch(
+        `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=sea_surface_temperature&forecast_days=5&timezone=Europe%2FAmsterdam`,
+        { next: { revalidate: 3600 } }
+      ),
+    ])
 
-    if (!res.ok) throw new Error('Open-Meteo niet bereikbaar')
+    if (!weerRes.ok) throw new Error('Open-Meteo niet bereikbaar')
 
-    const data = await res.json()
+    const data = await weerRes.json()
+    const marineData = marineRes.ok ? await marineRes.json() : null
     const dagelijks = data.daily
 
     const voorspelling: DagVoorspelling[] = dagelijks.time.map((datum: string, i: number) => {
@@ -26,13 +35,17 @@ export async function GET(request: NextRequest) {
       const maanfase = getMaanfase(d)
       const seizoenScore = berekenSeizoenScore(d)
 
-      // Watertemperatuur: mock voor MVP (Copernicus pipeline in v2)
-      const watertemperatuur = 19 + Math.sin(i * 0.5) * 1.5
+      const uurOffset = i * 24
+      // Gemiddelde SST overdag (uur 10-14)
+      const sstWaarden = marineData
+        ? [10, 11, 12, 13, 14].map((u) => marineData.hourly?.sea_surface_temperature?.[uurOffset + u] ?? null).filter((v) => v !== null)
+        : []
+      const watertemperatuur = sstWaarden.length > 0
+        ? sstWaarden.reduce((a: number, b: number) => a + b, 0) / sstWaarden.length
+        : 15 + Math.sin((d.getMonth() - 1) * (Math.PI / 6)) * 5 // seizoenscurve als fallback
 
       const windsnelheid = dagelijks.windspeed_10m_max?.[i] ?? 4
       const bewolking = dagelijks.cloudcover_mean?.[i] ?? 50
-      // Golfhoogte niet beschikbaar in daily; gebruik uursgemiddelde voor de nacht (uur 21-23)
-      const uurOffset = i * 24
       const golfwaarden = [21, 22, 23].map((u) => data.hourly.wave_height?.[uurOffset + u] ?? 0.5)
       const golfhoogte = golfwaarden.reduce((a: number, b: number) => a + b, 0) / golfwaarden.length
 
@@ -64,15 +77,16 @@ export async function GET(request: NextRequest) {
       const datum = d.toISOString().split('T')[0]
       const maanfase = getMaanfase(d)
       const seizoenScore = berekenSeizoenScore(d)
+      const watertemperatuur = 15 + Math.sin((d.getMonth() - 1) * (Math.PI / 6)) * 5
       const kans = berekenKans({
-        watertemperatuur: 20,
+        watertemperatuur,
         windsnelheid: 2 + i,
         golfhoogte: 0.3 + i * 0.1,
         maanfase,
         seizoenScore,
         bewolking: 30 + i * 10,
       })
-      return { datum, kans, windsnelheid: 2 + i, golfhoogte: 0.3 + i * 0.1, bewolking: 30 + i * 10, watertemperatuur: 20 }
+      return { datum, kans, windsnelheid: 2 + i, golfhoogte: 0.3 + i * 0.1, bewolking: 30 + i * 10, watertemperatuur: Math.round(watertemperatuur * 10) / 10 }
     })
     return NextResponse.json(fallback)
   }
