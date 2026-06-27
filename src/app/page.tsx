@@ -6,6 +6,7 @@ import { LOCATIES } from '@/lib/locaties'
 import { berekenKans, berekenSeizoenScore } from '@/lib/voorspelling'
 import { getMaanfase } from '@/lib/maanfase'
 import { LocatieMetKans, DagVoorspelling } from '@/lib/types'
+import { STATIONS, LOCATIE_STATION } from '@/lib/stations'
 import TimeSlider from '@/components/UI/TimeSlider'
 import LocationPanel from '@/components/UI/LocationPanel'
 import MoonPhase from '@/components/UI/MoonPhase'
@@ -26,27 +27,28 @@ const MapContainer = dynamic(() => import('@/components/Map/MapContainer'), {
 
 export default function Home() {
   const [voorspelling, setVoorspelling] = useState<DagVoorspelling[]>([])
+  // Weerdata per station-id
+  const [stationData, setStationData] = useState<Record<string, DagVoorspelling[]>>({})
   const [locaties, setLocaties] = useState<LocatieMetKans[]>([])
   const [geselecteerdeDag, setGeselecteerdeDag] = useState(0)
   const [geselecteerdeLocatie, setGeselecteerdeLocatie] = useState<LocatieMetKans | null>(null)
   const [loading, setLoading] = useState(true)
   const maanfase = getMaanfase(new Date())
 
-  // Bereken kansen voor alle locaties op basis van geselecteerde dag
+  // Bereken kansen voor alle locaties op basis van geselecteerde dag + per-station weerdata
   const updateLocatiesMetKansen = useCallback(
-    (dagIndex: number, dagVoorspelling: DagVoorspelling[]) => {
-      if (!dagVoorspelling.length) return
-
-      const dag = dagVoorspelling[dagIndex]
-      if (!dag) return
-
+    (dagIndex: number, stations: Record<string, DagVoorspelling[]>, fallbackVoorspelling: DagVoorspelling[]) => {
       const updated: LocatieMetKans[] = LOCATIES.map((loc) => {
+        const stationId = LOCATIE_STATION[loc.id] ?? 'nl-midden'
+        const dagReeks = stations[stationId] ?? fallbackVoorspelling
+        const dag = dagReeks[dagIndex]
+        if (!dag) return { ...loc, kans: 0 }
+
         const d = new Date(dag.datum)
         const seizoenScore = berekenSeizoenScore(d)
         const fase = getMaanfase(d)
-
-        // Estuaria krijgen lichte penaltyop golfhoogte (meer beschut)
         const golfCorrectie = loc.type === 'estuarium' ? 0.15 : 0
+
         const kans = berekenKans({
           watertemperatuur: dag.watertemperatuur,
           windsnelheid: dag.windsnelheid,
@@ -56,7 +58,7 @@ export default function Home() {
           bewolking: dag.bewolking,
         })
 
-        return { ...loc, kans, voorspelling: dagVoorspelling }
+        return { ...loc, kans, voorspelling: dagReeks }
       })
 
       setLocaties(updated)
@@ -64,41 +66,43 @@ export default function Home() {
     []
   )
 
-  // Laad voorspelling voor centrum NL bij start
+  // Laad weerdata voor alle 6 stations parallel bij start
   useEffect(() => {
-    async function laadVoorspelling() {
+    async function laadAlleStations() {
       try {
-        const res = await fetch('/api/voorspelling?lat=52.372&lng=4.533')
-        const data: DagVoorspelling[] = await res.json()
-        setVoorspelling(data)
-        updateLocatiesMetKansen(0, data)
+        const results = await Promise.all(
+          STATIONS.map((s) =>
+            fetch(`/api/voorspelling?lat=${s.lat}&lng=${s.lng}`)
+              .then((r) => r.json())
+              .then((data: DagVoorspelling[]) => [s.id, data] as const)
+              .catch(() => [s.id, [] as DagVoorspelling[]] as const)
+          )
+        )
+        const stations: Record<string, DagVoorspelling[]> = Object.fromEntries(results)
+        // Gebruik nl-midden als referentie voor de tijdslider bovenaan
+        const referentie = stations['nl-midden'] ?? Object.values(stations)[0] ?? []
+        setStationData(stations)
+        setVoorspelling(referentie)
+        updateLocatiesMetKansen(0, stations, referentie)
       } catch {
-        // Fallback: bereken met seizoensdata zonder weerAPI
         const fallback: DagVoorspelling[] = Array.from({ length: 5 }, (_, i) => {
           const d = new Date()
           d.setDate(d.getDate() + i)
-          return {
-            datum: d.toISOString().split('T')[0],
-            kans: 0,
-            windsnelheid: 4,
-            golfhoogte: 0.5,
-            bewolking: 40,
-            watertemperatuur: 19,
-          }
+          return { datum: d.toISOString().split('T')[0], kans: 0, windsnelheid: 4, golfhoogte: 0.5, bewolking: 40, watertemperatuur: 19 }
         })
         setVoorspelling(fallback)
-        updateLocatiesMetKansen(0, fallback)
+        updateLocatiesMetKansen(0, {}, fallback)
       } finally {
         setLoading(false)
       }
     }
-    laadVoorspelling()
+    laadAlleStations()
   }, [updateLocatiesMetKansen])
 
   // Update locatiekansen bij dagwissel
   useEffect(() => {
-    updateLocatiesMetKansen(geselecteerdeDag, voorspelling)
-  }, [geselecteerdeDag, voorspelling, updateLocatiesMetKansen])
+    if (voorspelling.length) updateLocatiesMetKansen(geselecteerdeDag, stationData, voorspelling)
+  }, [geselecteerdeDag, stationData, voorspelling, updateLocatiesMetKansen])
 
   // Update geselecteerde locatie na kansupdate
   useEffect(() => {
@@ -178,7 +182,7 @@ export default function Home() {
           <aside className="hidden md:flex absolute right-4 top-4 bottom-20 w-72 z-20 flex-col bg-[#0d1f35ee] backdrop-blur-md rounded-2xl border border-[#1e3a52] p-4 animate-slide-up overflow-y-auto">
             <LocationPanel
               locatie={geselecteerdeLocatie}
-              dagVoorspelling={voorspelling[geselecteerdeDag]}
+              dagVoorspelling={(stationData[LOCATIE_STATION[geselecteerdeLocatie.id] ?? 'nl-midden'] ?? voorspelling)[geselecteerdeDag]}
               onSluiten={() => setGeselecteerdeLocatie(null)}
             />
           </aside>
@@ -187,7 +191,7 @@ export default function Home() {
           <div className="md:hidden absolute bottom-24 left-4 right-4 z-20 bg-[#0d1f35f0] backdrop-blur-md rounded-2xl border border-[#1e3a52] p-4 animate-slide-up max-h-[55vh] overflow-y-auto">
             <LocationPanel
               locatie={geselecteerdeLocatie}
-              dagVoorspelling={voorspelling[geselecteerdeDag]}
+              dagVoorspelling={(stationData[LOCATIE_STATION[geselecteerdeLocatie.id] ?? 'nl-midden'] ?? voorspelling)[geselecteerdeDag]}
               onSluiten={() => setGeselecteerdeLocatie(null)}
             />
           </div>
