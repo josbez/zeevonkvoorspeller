@@ -3,8 +3,6 @@ import { berekenKans, berekenSeizoenScore } from '@/lib/voorspelling'
 import { getMaanfase } from '@/lib/maanfase'
 import { DagVoorspelling } from '@/lib/types'
 
-export const runtime = 'edge'
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const lat = parseFloat(searchParams.get('lat') ?? '52.372')
