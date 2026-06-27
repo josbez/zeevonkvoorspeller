@@ -109,30 +109,39 @@ export default function MapContainer({ locaties, geselecteerdeLocatie, onLocatie
 
     locs.forEach((loc) => {
       const kleur = kansKleur(loc.kans)
+      const kans = loc.kans
       const el = document.createElement('div')
       el.className = 'zeevonk-marker'
-      el.setAttribute('data-kans', String(loc.kans))
+      el.setAttribute('data-kans', String(kans))
+
+      // Coregrootte schaalt met kans: 4px (0%) → 18px (100%)
+      const coreSize = Math.round(4 + (kans / 100) * 14)
+      // Glow intensiteit: vrijwel niets bij laag, sterk bij hoog
+      const glowInner = Math.round(kans * 0.12)
+      const glowOuter = Math.round(kans * 0.22)
+      const glowOpacity = (0.2 + (kans / 100) * 0.65).toFixed(2)
 
       // Vonkjes: 0 onder 80%, daarna elke 3% één extra (max 7)
-      const aantalVonkjes = Math.min(7, Math.floor(Math.max(0, loc.kans - 80) / 3))
+      const aantalVonkjes = Math.min(7, Math.floor(Math.max(0, kans - 80) / 3))
+      // Straal van vonkjes schaalt mee met coreSize
+      const vonkRadius = coreSize * 1.8 + 8
 
-      // Verspreid vonkjes gelijkmatig qua hoek, met lichte jitter
       const vonkjesHtml = Array.from({ length: aantalVonkjes }, (_, vi) => {
         const baseAngle = (vi / aantalVonkjes) * 2 * Math.PI
         const jitter = (Math.random() - 0.5) * (Math.PI / aantalVonkjes)
         const hoek = baseAngle + jitter
-        const afstand = 14 + Math.random() * 18   // 14–32px van center
+        const afstand = vonkRadius + Math.random() * 12
         const px = Math.round(Math.cos(hoek) * afstand)
         const py = Math.round(Math.sin(hoek) * afstand)
-        const size = (2 + Math.random() * 2).toFixed(1)  // 2–4px
-        const dur = (1.8 + Math.random() * 1.8).toFixed(2)
-        const delay = (-Math.random() * parseFloat(dur)).toFixed(2) // negatief = direct zichtbaar
-        return `<div class="zeevonk-vonkje" style="--pos-x:${px}px;--pos-y:${py}px;--vsize:${size}px;--dur:${dur}s;--delay:${delay}s;background:${kleur};box-shadow:0 0 5px 2px ${kleur}bb"></div>`
+        const size = (1.5 + Math.random() * 2.5).toFixed(1)
+        const dur = (1.6 + Math.random() * 1.6).toFixed(2)
+        const delay = (-Math.random() * parseFloat(dur)).toFixed(2)
+        return `<div class="zeevonk-vonkje" style="--pos-x:${px}px;--pos-y:${py}px;--vsize:${size}px;--dur:${dur}s;--delay:${delay}s;background:${kleur};box-shadow:0 0 4px 2px ${kleur}cc"></div>`
       }).join('')
 
       el.innerHTML = `
-        <div class="zeevonk-core" style="background:${kleur};box-shadow:0 0 10px 5px ${kleur}55"></div>
-        <div class="zeevonk-ring" style="border-color:${kleur}44"></div>
+        <div class="zeevonk-core" style="width:${coreSize}px;height:${coreSize}px;background:${kleur};box-shadow:0 0 ${glowInner}px ${glowInner}px ${kleur}${Math.round(parseFloat(glowOpacity) * 255).toString(16).padStart(2,'0')}, 0 0 ${glowOuter}px ${glowOuter}px ${kleur}44"></div>
+        ${kans >= 20 ? `<div class="zeevonk-ring" style="border-color:${kleur}${kans >= 70 ? '66' : '33'}"></div>` : ''}
         ${vonkjesHtml}
       `
       el.addEventListener('click', () => onClick(loc))

@@ -67,42 +67,80 @@ export default function LocationPanel({ locatie, dagVoorspelling, onSluiten }: P
             waarde={`${dagVoorspelling.watertemperatuur}°C`}
             score={scores.watertemperatuur}
             max={30}
-            ideaal="18–22°C"
+            uitleg={
+              dagVoorspelling.watertemperatuur >= 18 && dagVoorspelling.watertemperatuur <= 22
+                ? `${dagVoorspelling.watertemperatuur}°C is optimaal voor Noctiluca scintillans.`
+                : dagVoorspelling.watertemperatuur < 15
+                ? `Te koud — Noctiluca is nauwelijks actief onder 15°C.`
+                : dagVoorspelling.watertemperatuur < 18
+                ? `Iets koud — optimum is 18–22°C, activiteit neemt toe naarmate het warmer wordt.`
+                : `Warm maar aan de hoge kant — boven 22°C neemt de activiteit geleidelijk af.`
+            }
           />
           <FactorBar
             label="Wind"
             waarde={`${dagVoorspelling.windsnelheid} m/s`}
             score={scores.wind}
             max={20}
-            ideaal="< 3 m/s"
+            uitleg={
+              dagVoorspelling.windsnelheid <= 3
+                ? `Windstil — perfect. Zeevonk is zichtbaar bij rustig water.`
+                : dagVoorspelling.windsnelheid < 6
+                ? `Lichte wind (${dagVoorspelling.windsnelheid} m/s). Zichtbaarheid verminderd maar mogelijk nog waarneembaar.`
+                : `Te winderig (${dagVoorspelling.windsnelheid} m/s). Golvend water verstoort de bioluminescentie.`
+            }
           />
           <FactorBar
             label="Golven"
             waarde={`${dagVoorspelling.golfhoogte} m`}
             score={scores.golven}
             max={15}
-            ideaal="< 0.3 m"
+            uitleg={
+              dagVoorspelling.golfhoogte <= 0.3
+                ? `Spiegelgladde zee — ideaal. Zelfs kleine vonken worden zichtbaar.`
+                : dagVoorspelling.golfhoogte < 0.7
+                ? `Lichte deining (${dagVoorspelling.golfhoogte} m). Zeevonk is nog zichtbaar in de golven.`
+                : `Ruwe zee (${dagVoorspelling.golfhoogte} m). Zeevonk wordt overspoeld door het geweld.`
+            }
           />
           <FactorBar
             label={`Maan ${getMaanfaseEmoji(maanfase)}`}
             waarde={getMaanfaseNaam(maanfase)}
             score={scores.maan}
             max={20}
-            ideaal="Nieuwe maan"
+            uitleg={
+              scores.maan >= 16
+                ? `${getMaanfaseNaam(maanfase)} — donkere nacht, ideaal om zeevonk te spotten.`
+                : scores.maan >= 8
+                ? `${getMaanfaseNaam(maanfase)} — matig donker. Zeevonk is minder contrastrijk.`
+                : `${getMaanfaseNaam(maanfase)} — te veel maanlicht. Zeevonk valt weg tegen de verlichte achtergrond.`
+            }
           />
           <FactorBar
             label="Bewolking"
             waarde={`${dagVoorspelling.bewolking}%`}
             score={scores.bewolking}
             max={5}
-            ideaal="< 20%"
+            uitleg={
+              dagVoorspelling.bewolking < 20
+                ? `Heldere lucht — geen wolken die het zicht belemmeren.`
+                : dagVoorspelling.bewolking < 60
+                ? `Deels bewolkt. Weinig effect op zeevonk, maar ster-licht valt weg.`
+                : `Zwaar bewolkt. Geen maanlicht of sterren, maar ook geen extra impact op zeevonk zelf.`
+            }
           />
           <FactorBar
             label="Seizoen"
-            waarde={datum.toLocaleDateString('nl-NL', { month: 'short' })}
+            waarde={datum.toLocaleDateString('nl-NL', { month: 'long' })}
             score={scores.seizoen}
             max={10}
-            ideaal="jul–aug"
+            uitleg={
+              scores.seizoen >= 8
+                ? `Piekseizoen — Noctiluca bloeit maximaal in juli–augustus langs de Nederlandse kust.`
+                : scores.seizoen >= 4
+                ? `Randseizoen. Noctiluca is aanwezig maar in lagere concentraties dan in de zomer.`
+                : `Buiten het seizoen. Noctiluca scintillans is nauwelijks aanwezig in koud water.`
+            }
           />
           {/* Totaalbalk */}
           <div className="mt-1 pt-2 border-t border-[#1e3a52]">
@@ -124,30 +162,34 @@ export default function LocationPanel({ locatie, dagVoorspelling, onSluiten }: P
 }
 
 function FactorBar({
-  label, waarde, score, max, ideaal
+  label, waarde, score, max, uitleg
 }: {
-  label: string; waarde: string; score: number; max: number; ideaal: string
+  label: string; waarde: string; score: number; max: number; uitleg: string
 }) {
   const pct = Math.round((score / max) * 100)
-  const kleur = pct >= 80 ? '#39ff14' : pct >= 50 ? '#00e5ff' : pct >= 20 ? '#ffb703' : '#8bb8cc'
+  const kleur = pct >= 80 ? '#39ff14' : pct >= 50 ? '#00e5ff' : pct >= 25 ? '#ffb703' : '#ff4444'
+  const icoon = pct >= 80 ? '✓' : pct >= 50 ? '~' : '✗'
   return (
-    <div className="bg-[#0d1f35] rounded-lg px-3 py-2">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] uppercase tracking-wider text-[#8bb8cc]">{label}</span>
+    <div className="bg-[#0d1f35] rounded-lg px-3 py-2.5">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold leading-none" style={{ color: kleur }}>{icoon}</span>
+          <span className="text-[10px] uppercase tracking-wider text-[#e8f4f8]">{label}</span>
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#8bb8cc]">{waarde}</span>
-          <span className="text-[10px] font-mono font-semibold" style={{ color: kleur }}>
-            {Math.round(score)}/{max}
+          <span className="text-[11px] font-mono text-[#e8f4f8]">{waarde}</span>
+          <span className="text-[10px] font-mono font-semibold tabular-nums" style={{ color: kleur }}>
+            {Math.round(score)}<span className="text-[#8bb8cc]">/{max}</span>
           </span>
         </div>
       </div>
-      <div className="h-1 rounded-full bg-[#162b47] overflow-hidden">
+      <div className="h-1 rounded-full bg-[#162b47] overflow-hidden mb-1.5">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, background: kleur }}
         />
       </div>
-      <p className="text-[9px] text-[#8bb8cc55] mt-0.5">ideaal: {ideaal}</p>
+      <p className="text-[10px] text-[#8bb8cc] leading-snug">{uitleg}</p>
     </div>
   )
 }
